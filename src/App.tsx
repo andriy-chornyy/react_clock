@@ -3,7 +3,6 @@ import './App.scss';
 
 function getRandomName(): string {
   const value = Date.now().toString().slice(-4);
-
   return `Clock-${value}`;
 }
 
@@ -12,8 +11,6 @@ type State = {
   timeNow: Date;
   hasClock: boolean;
   suppressNextLog: boolean;
-  savedName?: string;
-  wasRenamed: boolean;
 };
 
 export class App extends React.Component<{}, State> {
@@ -22,12 +19,9 @@ export class App extends React.Component<{}, State> {
     timeNow: new Date(),
     hasClock: true,
     suppressNextLog: false,
-    savedName: undefined,
-    wasRenamed: false,
   };
 
   private nameTimerId?: number;
-
   private timeTimerId?: number;
 
   private handleRightClick = (event: MouseEvent) => {
@@ -40,73 +34,73 @@ export class App extends React.Component<{}, State> {
   };
 
   componentDidMount() {
-    this.startTimers();
+    this.nameTimerId = window.setInterval(() => {
+      this.setState({ clockName: getRandomName() });
+    }, 3300);
+
+    this.timeTimerId = window.setInterval(() => {
+      this.setState({ timeNow: new Date() });
+    }, 1000);
 
     document.addEventListener('contextmenu', this.handleRightClick);
     document.addEventListener('click', this.handleLeftClick);
   }
 
   componentWillUnmount() {
-    this.clearTimers();
+    if (this.nameTimerId != null) {
+      window.clearInterval(this.nameTimerId);
+    }
+
+    if (this.timeTimerId != null) {
+      window.clearInterval(this.timeTimerId);
+    }
 
     document.removeEventListener('contextmenu', this.handleRightClick);
     document.removeEventListener('click', this.handleLeftClick);
   }
 
-  startTimers = () => {
-    this.nameTimerId = window.setInterval(() => {
-      this.setState({
-        clockName: getRandomName(),
-        wasRenamed: true,
-      });
-    }, 3300);
-
-    this.timeTimerId = window.setInterval(() => {
-      this.setState({ timeNow: new Date() });
-    }, 1000);
-  };
-
-  clearTimers = () => {
-    if (this.nameTimerId != null) {
-      clearInterval(this.nameTimerId);
-      this.nameTimerId = undefined;
-    }
-
-    if (this.timeTimerId != null) {
-      clearInterval(this.timeTimerId);
-      this.timeTimerId = undefined;
-    }
-  };
-
   componentDidUpdate(_prevProps: {}, prevState: State) {
-    const { hasClock} = this.state;
+    const { hasClock, suppressNextLog } = this.state;
 
-    // if (prevState.timeNow !== this.state.timeNow && !suppressNextLog) {
-    //   console.log(this.state.timeNow.toUTCString().slice(-12, -4));
-    // } else if (suppressNextLog) {
-    //   this.setState({ suppressNextLog: false });
-    // }
+    if (prevState.timeNow !== this.state.timeNow) {
+      if (!suppressNextLog) {
+        // eslint-disable-next-line no-console
+        console.log(this.state.timeNow.toUTCString().slice(-12, -4));
+      } else {
+        this.setState({ suppressNextLog: false });
+      }
+    }
 
-    // if (prevState.clockName !== this.state.clockName) {
-    //   console.warn(
-    //     `Renamed from ${prevState.clockName} to ${this.state.clockName}`,
-    //   );
-    // }
+    if (prevState.clockName !== this.state.clockName) {
+      // eslint-disable-next-line no-console
+      console.warn(`Renamed from ${prevState.clockName} to ${this.state.clockName}`);
+    }
 
     if (prevState.hasClock && !hasClock) {
-      this.setState({ savedName: prevState.clockName });
-      this.clearTimers();
+      if (this.nameTimerId !== undefined) {
+        window.clearInterval(this.nameTimerId);
+        this.nameTimerId = undefined;
+      }
+      if (this.timeTimerId !== undefined) {
+        window.clearInterval(this.timeTimerId);
+        this.timeTimerId = undefined;
+      }
     }
 
     if (!prevState.hasClock && hasClock) {
       this.setState({
         timeNow: new Date(),
-        clockName: this.state.wasRenamed
-          ? (this.state.savedName ?? getRandomName())
-          : 'Clock-0',
+        clockName: getRandomName(),
         suppressNextLog: true,
       });
-      this.startTimers();
+
+      this.nameTimerId = window.setInterval(() => {
+        this.setState({ clockName: getRandomName() });
+      }, 3300);
+
+      this.timeTimerId = window.setInterval(() => {
+        this.setState({ timeNow: new Date() });
+      }, 1000);
     }
   }
 
@@ -130,6 +124,19 @@ export class App extends React.Component<{}, State> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // import React from 'react';
 // import './App.scss';
@@ -163,6 +170,10 @@ export class App extends React.Component<{}, State> {
 //     );
 //   }
 // }
+
+
+
+
 
 // import React from 'react';
 // import './App.scss';
@@ -201,6 +212,7 @@ export class App extends React.Component<{}, State> {
 //     </div>
 //   );
 // };
+
 
 // import React, { useEffect, useState } from 'react';
 // import './App.scss';
@@ -276,3 +288,7 @@ export class App extends React.Component<{}, State> {
 //     </div>
 //   );
 // };
+
+
+
+
